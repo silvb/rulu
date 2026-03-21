@@ -4,6 +4,10 @@ import { precacheAndRoute } from "workbox-precaching";
 
 declare const self: ServiceWorkerGlobalScope;
 
+// Activate new service worker immediately (no waiting)
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+
 // Workbox injects the precache manifest here at build time
 precacheAndRoute(self.__WB_MANIFEST);
 
