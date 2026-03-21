@@ -11,6 +11,7 @@ export interface Item {
   emoji: string;
   time?: string; // HH:MM, only for events
   frequency?: Frequency; // default: weekly
+  frequency_phase?: number; // biweekly: 0=odd weeks, 1=even weeks; monthly: 0–3 for 1st–4th week
   sort_order?: number;
 }
 

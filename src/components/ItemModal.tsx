@@ -14,6 +14,7 @@ interface ItemModalProps {
     day: number;
     personal: boolean;
     frequency: Frequency;
+    frequency_phase: number;
   }) => void;
   onDelete?: (id: string) => void;
   onClose: () => void;
@@ -34,6 +35,7 @@ export function ItemModal({
   const [emoji, setEmoji] = useState(editItem?.emoji ?? "📋");
   const [day, setDay] = useState(editItem?.day ?? defaultDay);
   const [frequency, setFrequency] = useState<Frequency>(editItem?.frequency ?? "weekly");
+  const [frequencyPhase, setFrequencyPhase] = useState(editItem?.frequency_phase ?? 0);
   const [personal, setPersonal] = useState(isEdit ? editItem.owner_id === memberId : false);
 
   const handleSave = () => {
@@ -46,6 +48,7 @@ export function ItemModal({
       day,
       personal,
       frequency: type === "todo" ? frequency : "weekly",
+      frequency_phase: type === "todo" && frequency !== "weekly" ? frequencyPhase : 0,
     });
   };
 
@@ -179,10 +182,70 @@ export function ItemModal({
               ).map((opt) => (
                 <button
                   key={opt.value}
-                  onClick={() => setFrequency(opt.value)}
+                  onClick={() => {
+                    setFrequency(opt.value);
+                    if (opt.value !== frequency) setFrequencyPhase(0);
+                  }}
                   className={[
                     "flex-1 py-2.5 rounded-xl border-2 text-sm font-bold cursor-pointer transition-all duration-200",
                     frequency === opt.value
+                      ? "bg-pink-pale border-pink text-pink"
+                      : "bg-white border-pink-light text-slate-dark",
+                  ].join(" ")}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Frequency phase picker */}
+        {type === "todo" && frequency === "biweekly" && (
+          <div className="mb-4">
+            <label className="text-slate-muted mb-1.5 block text-[13px] font-extrabold tracking-wide uppercase">
+              Which weeks?
+            </label>
+            <div className="flex gap-2">
+              {([
+                { value: 0, label: "Odd weeks" },
+                { value: 1, label: "Even weeks" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setFrequencyPhase(opt.value)}
+                  className={[
+                    "flex-1 py-2.5 rounded-xl border-2 text-sm font-bold cursor-pointer transition-all duration-200",
+                    frequencyPhase === opt.value
+                      ? "bg-pink-pale border-pink text-pink"
+                      : "bg-white border-pink-light text-slate-dark",
+                  ].join(" ")}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {type === "todo" && frequency === "monthly" && (
+          <div className="mb-4">
+            <label className="text-slate-muted mb-1.5 block text-[13px] font-extrabold tracking-wide uppercase">
+              Which week of the month?
+            </label>
+            <div className="flex gap-2">
+              {([
+                { value: 0, label: "1st" },
+                { value: 1, label: "2nd" },
+                { value: 2, label: "3rd" },
+                { value: 3, label: "4th" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setFrequencyPhase(opt.value)}
+                  className={[
+                    "flex-1 py-2.5 rounded-xl border-2 text-sm font-bold cursor-pointer transition-all duration-200",
+                    frequencyPhase === opt.value
                       ? "bg-pink-pale border-pink text-pink"
                       : "bg-white border-pink-light text-slate-dark",
                   ].join(" ")}

@@ -88,7 +88,11 @@ export function ItemCard({
           )}
           {item.frequency && item.frequency !== "weekly" && (
             <span className="text-slate-muted mt-0.5 block text-[10px] font-bold">
-              {item.frequency === "biweekly" ? "every 2 weeks" : "monthly"}
+              {item.frequency === "biweekly"
+                ? item.frequency_phase === 1
+                  ? "every 2 wks (even)"
+                  : "every 2 wks (odd)"
+                : `monthly (${["1st", "2nd", "3rd", "4th"][item.frequency_phase ?? 0]} wk)`}
             </span>
           )}
         </div>

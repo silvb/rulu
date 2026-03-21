@@ -49,7 +49,9 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
   const todayIndex = getTodayIndex();
 
   const inactiveItemIds = new Set(
-    items.filter((item) => !isItemVisibleInWeek(item.frequency, weekStart)).map((item) => item.id),
+    items
+      .filter((item) => !isItemVisibleInWeek(item.frequency, weekStart, item.frequency_phase))
+      .map((item) => item.id),
   );
 
   useEffect(() => {
@@ -231,6 +233,7 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
               emoji: data.emoji,
               owner_id: data.personal ? currentMember.id : null,
               frequency: data.frequency,
+              frequency_phase: data.frequency_phase,
               ...(data.type === "event" && data.time ? { time: data.time } : {}),
             });
             setAddModalDay(null);
@@ -254,6 +257,7 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
               time: data.type === "event" ? data.time : undefined,
               owner_id: data.personal ? currentMember.id : null,
               frequency: data.frequency,
+              frequency_phase: data.frequency_phase,
             });
             setEditItem(null);
           }}

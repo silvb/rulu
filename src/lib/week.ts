@@ -26,26 +26,32 @@ export function getISOWeekNumber(date: Date): number {
 /**
  * Checks whether an item should be visible in a given week.
  * - weekly: always visible
- * - biweekly: visible on odd ISO weeks
- * - monthly: visible only in the week containing the 1st–7th (first occurrence of item.day)
+ * - biweekly: phase 0 = odd ISO weeks, phase 1 = even ISO weeks
+ * - monthly: phase 0–3 = 1st–4th week of the month (week containing days 1–7, 8–14, 15–21, 22–28)
  */
-export function isItemVisibleInWeek(frequency: string | undefined, weekStart: string): boolean {
+export function isItemVisibleInWeek(
+  frequency: string | undefined,
+  weekStart: string,
+  phase: number = 0,
+): boolean {
   const freq = frequency || "weekly";
   if (freq === "weekly") return true;
 
   const monday = new Date(weekStart + "T00:00:00");
 
   if (freq === "biweekly") {
-    return getISOWeekNumber(monday) % 2 === 1;
+    const isOdd = getISOWeekNumber(monday) % 2 === 1;
+    return phase === 1 ? !isOdd : isOdd;
   }
 
   if (freq === "monthly") {
-    // The item shows in the first week of the month that contains day 1–7
-    // Check if any day in this Mon–Sun week falls on the 1st–7th
+    const rangeStart = phase * 7 + 1;
+    const rangeEnd = rangeStart + 6;
     for (let offset = 0; offset < 7; offset++) {
       const d = new Date(monday);
       d.setDate(d.getDate() + offset);
-      if (d.getDate() <= 7) return true;
+      const dom = d.getDate();
+      if (dom >= rangeStart && dom <= rangeEnd) return true;
     }
     return false;
   }
