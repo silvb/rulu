@@ -6,7 +6,6 @@ const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY")!;
 const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const CRON_SECRET = Deno.env.get("CRON_SECRET");
 const TIMEZONE = Deno.env.get("HOUSEHOLD_TIMEZONE") || "Europe/Berlin";
 
 webpush.setVapidDetails("mailto:noreply@rulu.app", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
@@ -49,10 +48,11 @@ function addMinutesHHMM(hhmm: string, minutes: number): string {
 }
 
 Deno.serve(async (req) => {
-  // Verify cron secret if configured
-  if (CRON_SECRET) {
-    const auth = req.headers.get("Authorization");
-    if (auth !== `Bearer ${CRON_SECRET}`) {
+  // Verify cron secret (passed via x-cron-secret to avoid Supabase gateway conflicts)
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  if (cronSecret) {
+    const provided = req.headers.get("x-cron-secret");
+    if (provided !== cronSecret) {
       return new Response("Unauthorized", { status: 401 });
     }
   }
