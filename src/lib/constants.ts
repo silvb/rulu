@@ -32,6 +32,7 @@ export const EMOJI_OPTIONS = [
   "🧃",
   "🛒",
   "🏪",
+  "🍌",
   // Kids activities
   "🎨",
   "🎵",
