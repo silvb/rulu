@@ -5,6 +5,7 @@ import { ProgressBar } from "./ProgressBar";
 import { ContextMenu } from "./ContextMenu";
 import { ItemModal } from "./ItemModal";
 import { useItems } from "../hooks/useItems";
+import { usePush } from "../hooks/usePush";
 import { getWeekStart, getTodayIndex } from "../lib/week";
 import { DAYS } from "../lib/constants";
 import type { Item, Member, ContextMenuState } from "../lib/types";
@@ -27,6 +28,8 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
     moveItem,
     toggleCompletion,
   } = useItems(currentMember.id, householdId);
+
+  const { supported: pushSupported, subscribed, loading: pushLoading, subscribe, unsubscribe } = usePush(householdId);
 
   const [isMobile, setIsMobile] = useState(false);
   const [mobileDay, setMobileDay] = useState<number | null>(null);
@@ -108,11 +111,21 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
       <header className="from-pink sticky top-0 z-20 bg-linear-to-br to-[#FF8FB1] px-5 pt-5 pb-4 text-white shadow-[0_4px_20px_rgba(255,107,157,0.3)]">
         <div className="mb-3 flex items-baseline justify-between">
           <h1 className="m-0 text-[28px] font-black tracking-tight">Rulu</h1>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <span className="text-sm font-bold opacity-90">
               ✨ Week of{" "}
               {new Date(weekStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
             </span>
+            {pushSupported && (
+              <button
+                onClick={subscribed ? unsubscribe : subscribe}
+                disabled={pushLoading}
+                className="cursor-pointer rounded-full border-2 border-white/30 bg-white/20 px-2 py-0.5 text-sm text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/30 disabled:opacity-50"
+                title={subscribed ? "Disable notifications" : "Enable notifications"}
+              >
+                {subscribed ? "🔔" : "🔕"}
+              </button>
+            )}
             <button
               onClick={onLogout}
               className="cursor-pointer rounded-full border-2 border-white/30 bg-white/20 px-2.5 py-0.5 text-sm font-bold text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/30"
