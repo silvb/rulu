@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Nunito", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --color-pink: #ff6b9d;
+  --color-pink-light: #ffd1e0;
+  --color-pink-pale: #fff0f5;
+  --color-yellow: #ffd233;
+  --color-yellow-light: #fff3c4;
+  --color-green: #4ade80;
+  --color-green-light: #d1fae5;
+  --color-green-dark: #16a34a;
+  --color-slate-dark: #334155;
+  --color-slate-muted: #94a3b8;
+}
+
+@layer base {
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  @keyframes confetti-pop {
+    0% {
+      transform: scale(0) rotate(0deg);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.4) rotate(20deg);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(0) rotate(-10deg) translateY(-20px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.15);
+    }
+  }
+}
