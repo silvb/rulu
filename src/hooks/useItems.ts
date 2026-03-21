@@ -122,6 +122,11 @@ export function useItems(memberId: string, householdId: string) {
 
   const addItem = useCallback(
     async (item: Omit<Item, "id">) => {
+      // Optimistic: add with a temporary ID immediately
+      const tempId = `temp-${Date.now()}`;
+      const optimistic: Item = { ...item, id: tempId, household_id: householdId, owner_id: item.owner_id ?? null };
+      setItems((prev) => [...prev, optimistic]);
+
       const row = {
         ...item,
         household_id: householdId,
@@ -129,13 +134,15 @@ export function useItems(memberId: string, householdId: string) {
       };
       const { data } = await supabase.from("items").insert(row).select().single();
       if (data) {
+        // Swap temp ID for real ID (realtime may have already added it)
         setItems((prev) => {
-          if (prev.some((i) => i.id === data.id)) return prev;
-          return [...prev, data as Item];
+          const withoutTemp = prev.filter((i) => i.id !== tempId);
+          if (withoutTemp.some((i) => i.id === data.id)) return withoutTemp;
+          return [...withoutTemp, data as Item];
         });
       }
     },
-    [],
+    [householdId],
   );
 
   const updateItem = useCallback(
