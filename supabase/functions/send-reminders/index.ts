@@ -59,16 +59,16 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const { hhmm, dayIndex } = getNow();
-  const in15 = addMinutesHHMM(hhmm, 15);
+  const in60 = addMinutesHHMM(hhmm, 60);
 
-  // Query events in the 15-minute reminder window for today
+  // Query events in the 60-minute reminder window for today
   const { data: events, error } = await supabase
     .from("items")
     .select("id, household_id, title, emoji, time")
     .eq("type", "event")
     .eq("day", dayIndex)
     .gt("time", hhmm)
-    .lte("time", in15);
+    .lte("time", in60);
 
   if (error || !events?.length) {
     return Response.json({ sent: 0, events: 0, error: error?.message });
@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
     for (const event of householdEvents) {
       const payload = JSON.stringify({
         title: `${event.emoji} ${event.title}`,
-        body: `Starting at ${event.time} — in 15 minutes!`,
+        body: `Starting at ${event.time} — in about an hour!`,
         tag: `event-${event.id}`,
       });
 
