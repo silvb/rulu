@@ -1,22 +1,39 @@
 import { useState, useCallback, useEffect } from "react";
 import type { Member } from "../lib/types";
-import { supabase, HOUSEHOLD_ID } from "../lib/supabase";
+import { supabase } from "../lib/supabase";
 
 const MEMBER_KEY = "rulu-member-id";
 
 export function useMember() {
   const [members, setMembers] = useState<Member[]>([]);
   const [currentMember, setCurrentMember] = useState<Member | null>(null);
+  const [householdId, setHouseholdId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
+      // Get household_id from the authenticated user's membership
+      const { data: membership } = await supabase
+        .from("household_members")
+        .select("household_id")
+        .limit(1)
+        .single();
+
+      if (cancelled || !membership) {
+        setLoaded(true);
+        return;
+      }
+
+      const hid = membership.household_id as string;
+      setHouseholdId(hid);
+
+      // Fetch members for this household
       const { data } = await supabase
         .from("members")
         .select("*")
-        .eq("household_id", HOUSEHOLD_ID);
+        .eq("household_id", hid);
 
       if (cancelled) return;
 
@@ -55,5 +72,5 @@ export function useMember() {
     localStorage.removeItem(MEMBER_KEY);
   }, []);
 
-  return { members, currentMember, loaded, login, logout };
+  return { members, currentMember, householdId, loaded, login, logout };
 }

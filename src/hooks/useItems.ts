@@ -1,13 +1,13 @@
 import { useState, useCallback, useEffect } from "react";
 import type { Item } from "../lib/types";
-import { supabase, HOUSEHOLD_ID } from "../lib/supabase";
+import { supabase } from "../lib/supabase";
 import { getWeekStart } from "../lib/week";
 
 function isVisibleTo(item: Item, memberId: string): boolean {
   return !item.owner_id || item.owner_id === memberId;
 }
 
-export function useItems(memberId: string) {
+export function useItems(memberId: string, householdId: string) {
   const [items, setItems] = useState<Item[]>([]);
   const [completions, setCompletions] = useState<Record<string, boolean>>({});
   const [loaded, setLoaded] = useState(false);
@@ -23,7 +23,7 @@ export function useItems(memberId: string) {
         supabase
           .from("items")
           .select("*")
-          .eq("household_id", HOUSEHOLD_ID)
+          .eq("household_id", householdId)
           .or(`owner_id.is.null,owner_id.eq.${memberId}`),
         supabase.from("completions").select("*").eq("week_start", weekStart),
       ]);
@@ -61,7 +61,7 @@ export function useItems(memberId: string) {
           event: "*",
           schema: "public",
           table: "items",
-          filter: `household_id=eq.${HOUSEHOLD_ID}`,
+          filter: `household_id=eq.${householdId}`,
         },
         (payload) => {
           if (payload.eventType === "INSERT") {
@@ -124,7 +124,7 @@ export function useItems(memberId: string) {
     async (item: Omit<Item, "id">) => {
       const row = {
         ...item,
-        household_id: HOUSEHOLD_ID,
+        household_id: householdId,
         owner_id: item.owner_id ?? null,
       };
       const { data } = await supabase.from("items").insert(row).select().single();

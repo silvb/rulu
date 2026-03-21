@@ -11,10 +11,12 @@ import type { Item, Member, ContextMenuState } from "../lib/types";
 
 interface WeekGridProps {
   currentMember: Member;
+  householdId: string;
   onLogout: () => void;
+  onSignOut: () => void;
 }
 
-export function WeekGrid({ currentMember, onLogout }: WeekGridProps) {
+export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: WeekGridProps) {
   const {
     items,
     completions,
@@ -24,7 +26,7 @@ export function WeekGrid({ currentMember, onLogout }: WeekGridProps) {
     deleteItem,
     moveItem,
     toggleCompletion,
-  } = useItems(currentMember.id);
+  } = useItems(currentMember.id, householdId);
 
   const [isMobile, setIsMobile] = useState(false);
   const [mobileDay, setMobileDay] = useState<number | null>(null);
@@ -235,10 +237,16 @@ export function WeekGrid({ currentMember, onLogout }: WeekGridProps) {
       )}
 
       {/* Footer */}
-      <footer className="bg-pink-pale/90 fixed right-0 bottom-0 left-0 z-10 p-3 text-center backdrop-blur-[10px]">
+      <footer className="bg-pink-pale/90 fixed right-0 bottom-0 left-0 z-10 flex items-center justify-between px-4 py-3 backdrop-blur-[10px]">
         <span className="text-slate-muted text-xs font-bold">
           tap to check · long-press to edit · drag to move
         </span>
+        <button
+          onClick={onSignOut}
+          className="text-slate-muted cursor-pointer border-none bg-transparent text-[10px] font-bold opacity-50 transition-opacity hover:opacity-100"
+        >
+          Sign out
+        </button>
       </footer>
     </div>
   );
