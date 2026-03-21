@@ -59,14 +59,24 @@ export function usePush(householdId: string | null) {
         return;
       }
 
-      await supabase.from("push_subscriptions").upsert(
+      const { error } = await supabase.from("push_subscriptions").upsert(
         {
           user_id: user.id,
           household_id: householdId,
           subscription: subscription.toJSON(),
         },
-        { onConflict: "user_id" },
+        { onConflict: "user_id,subscription->>'endpoint'" },
       );
+
+      if (error) {
+        // Fallback: delete existing and insert fresh
+        await supabase.from("push_subscriptions").delete().eq("user_id", user.id);
+        await supabase.from("push_subscriptions").insert({
+          user_id: user.id,
+          household_id: householdId,
+          subscription: subscription.toJSON(),
+        });
+      }
 
       setSubscribed(true);
     } catch {
