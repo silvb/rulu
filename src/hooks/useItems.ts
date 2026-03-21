@@ -3,7 +3,11 @@ import type { Item } from "../lib/types";
 import { supabase, HOUSEHOLD_ID } from "../lib/supabase";
 import { getWeekStart } from "../lib/week";
 
-export function useItems() {
+function isVisibleTo(item: Item, memberId: string): boolean {
+  return !item.owner_id || item.owner_id === memberId;
+}
+
+export function useItems(memberId: string) {
   const [items, setItems] = useState<Item[]>([]);
   const [completions, setCompletions] = useState<Record<string, boolean>>({});
   const [loaded, setLoaded] = useState(false);
@@ -16,7 +20,11 @@ export function useItems() {
 
     async function load() {
       const [itemsRes, completionsRes] = await Promise.all([
-        supabase.from("items").select("*").eq("household_id", HOUSEHOLD_ID),
+        supabase
+          .from("items")
+          .select("*")
+          .eq("household_id", HOUSEHOLD_ID)
+          .or(`owner_id.is.null,owner_id.eq.${memberId}`),
         supabase.from("completions").select("*").eq("week_start", weekStart),
       ]);
 
@@ -41,7 +49,7 @@ export function useItems() {
     return () => {
       cancelled = true;
     };
-  }, [weekStart]);
+  }, [weekStart, memberId]);
 
   // Realtime subscriptions
   useEffect(() => {
@@ -57,14 +65,24 @@ export function useItems() {
         },
         (payload) => {
           if (payload.eventType === "INSERT") {
+            const newItem = payload.new as Item;
+            if (!isVisibleTo(newItem, memberId)) return;
             setItems((prev) => {
-              if (prev.some((i) => i.id === (payload.new as Item).id)) return prev;
-              return [...prev, payload.new as Item];
+              if (prev.some((i) => i.id === newItem.id)) return prev;
+              return [...prev, newItem];
             });
           } else if (payload.eventType === "UPDATE") {
-            setItems((prev) =>
-              prev.map((i) => (i.id === (payload.new as Item).id ? (payload.new as Item) : i)),
-            );
+            const updated = payload.new as Item;
+            if (!isVisibleTo(updated, memberId)) {
+              // Item became personal for someone else — remove it
+              setItems((prev) => prev.filter((i) => i.id !== updated.id));
+            } else {
+              setItems((prev) =>
+                prev.some((i) => i.id === updated.id)
+                  ? prev.map((i) => (i.id === updated.id ? updated : i))
+                  : [...prev, updated],
+              );
+            }
           } else if (payload.eventType === "DELETE") {
             setItems((prev) => prev.filter((i) => i.id !== (payload.old as Item).id));
           }
@@ -100,11 +118,15 @@ export function useItems() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [weekStart]);
+  }, [weekStart, memberId]);
 
   const addItem = useCallback(
     async (item: Omit<Item, "id">) => {
-      const row = { ...item, household_id: HOUSEHOLD_ID };
+      const row = {
+        ...item,
+        household_id: HOUSEHOLD_ID,
+        owner_id: item.owner_id ?? null,
+      };
       const { data } = await supabase.from("items").insert(row).select().single();
       if (data) {
         setItems((prev) => {
@@ -118,7 +140,6 @@ export function useItems() {
 
   const updateItem = useCallback(
     async (id: string, updates: Partial<Item>) => {
-      // Optimistic update
       setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...updates } : it)));
       await supabase.from("items").update(updates).eq("id", id);
     },
@@ -127,7 +148,6 @@ export function useItems() {
 
   const deleteItem = useCallback(
     async (id: string) => {
-      // Optimistic update
       setItems((prev) => prev.filter((it) => it.id !== id));
       setCompletions((prev) => {
         const next = { ...prev };
@@ -141,7 +161,6 @@ export function useItems() {
 
   const moveItem = useCallback(
     async (id: string, toDay: number) => {
-      // Optimistic update
       setItems((prev) => prev.map((it) => (it.id === id ? { ...it, day: toDay } : it)));
       await supabase.from("items").update({ day: toDay }).eq("id", id);
     },
@@ -151,7 +170,6 @@ export function useItems() {
   const toggleCompletion = useCallback(
     async (id: string) => {
       const wasDone = completions[id];
-      // Optimistic update
       setCompletions((prev) => {
         const next = { ...prev };
         if (next[id]) {

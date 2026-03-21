@@ -3,32 +3,49 @@ import { DAYS, EMOJI_OPTIONS } from "../lib/constants";
 import type { Item, ItemType } from "../lib/types";
 
 interface ItemModalProps {
-  /** When editing, pass the existing item. For adding, pass null. */
   editItem: Item | null;
-  /** The day to default to when adding a new item. */
   defaultDay: number;
+  memberId: string;
   onSave: (data: {
     title: string;
     type: ItemType;
     time: string;
     emoji: string;
     day: number;
+    personal: boolean;
   }) => void;
   onDelete?: (id: string) => void;
   onClose: () => void;
 }
 
-export function ItemModal({ editItem, defaultDay, onSave, onDelete, onClose }: ItemModalProps) {
+export function ItemModal({
+  editItem,
+  defaultDay,
+  memberId,
+  onSave,
+  onDelete,
+  onClose,
+}: ItemModalProps) {
   const isEdit = !!editItem;
   const [title, setTitle] = useState(editItem?.title ?? "");
   const [type, setType] = useState<ItemType>(editItem?.type ?? "todo");
   const [time, setTime] = useState(editItem?.time ?? "");
   const [emoji, setEmoji] = useState(editItem?.emoji ?? "📋");
   const [day, setDay] = useState(editItem?.day ?? defaultDay);
+  const [personal, setPersonal] = useState(
+    isEdit ? editItem.owner_id === memberId : false,
+  );
 
   const handleSave = () => {
     if (!title.trim()) return;
-    onSave({ title: title.trim(), type, time: type === "event" ? time : "", emoji, day });
+    onSave({
+      title: title.trim(),
+      type,
+      time: type === "event" ? time : "",
+      emoji,
+      day,
+      personal,
+    });
   };
 
   return (
@@ -144,6 +161,24 @@ export function ItemModal({ editItem, defaultDay, onSave, onDelete, onClose }: I
             </div>
           </div>
         )}
+
+        {/* Personal toggle */}
+        <div className="mb-4">
+          <button
+            onClick={() => setPersonal((p) => !p)}
+            className={[
+              "flex w-full items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer transition-all duration-200",
+              personal
+                ? "bg-[#EDE9FE] border-[#8B5CF6] text-[#7C3AED]"
+                : "bg-white border-pink-light text-slate-muted",
+            ].join(" ")}
+          >
+            <span className="text-lg">{personal ? "👤" : "👥"}</span>
+            <span className="text-sm font-bold">
+              {personal ? "Just for me" : "Shared with household"}
+            </span>
+          </button>
+        </div>
 
         {/* Actions */}
         <div className="mt-6 flex gap-2">

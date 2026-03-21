@@ -27,6 +27,7 @@ export function ItemCard({
   );
 
   const isEvent = item.type === "event";
+  const isPersonal = !!item.owner_id;
 
   return (
     <div
@@ -48,7 +49,9 @@ export function ItemCard({
         "relative rounded-xl border-2 px-2.5 py-2 select-none transition-all duration-200",
         isEvent
           ? "bg-linear-to-br from-[#FFF9E0] to-yellow-light border-yellow"
-          : "bg-white border-pink-light",
+          : isPersonal
+            ? "bg-linear-to-br from-[#F5F3FF] to-[#EDE9FE] border-[#C4B5FD]"
+            : "bg-white border-pink-light",
         isDone && "bg-green-light border-green opacity-80",
         isCelebrating && "scale-105 border-green shadow-[0_0_20px_rgba(74,222,128,0.25)]",
         isMobile ? "cursor-default" : "cursor-grab",
@@ -69,6 +72,11 @@ export function ItemCard({
               .join(" ")}
           >
             {item.title}
+            {isPersonal && (
+              <span className="ml-1 text-[10px] text-[#8B5CF6]" title="Personal">
+                👤
+              </span>
+            )}
           </span>
           {item.time && (
             <span className="mt-0.5 block text-[10px] font-bold text-[#B8860B]">

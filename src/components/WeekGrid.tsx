@@ -7,9 +7,14 @@ import { ItemModal } from "./ItemModal";
 import { useItems } from "../hooks/useItems";
 import { getWeekStart, getTodayIndex } from "../lib/week";
 import { DAYS } from "../lib/constants";
-import type { Item, ContextMenuState } from "../lib/types";
+import type { Item, Member, ContextMenuState } from "../lib/types";
 
-export function WeekGrid() {
+interface WeekGridProps {
+  currentMember: Member;
+  onLogout: () => void;
+}
+
+export function WeekGrid({ currentMember, onLogout }: WeekGridProps) {
   const {
     items,
     completions,
@@ -19,7 +24,7 @@ export function WeekGrid() {
     deleteItem,
     moveItem,
     toggleCompletion,
-  } = useItems();
+  } = useItems(currentMember.id);
 
   const [isMobile, setIsMobile] = useState(false);
   const [mobileDay, setMobileDay] = useState<number | null>(null);
@@ -101,10 +106,19 @@ export function WeekGrid() {
       <header className="from-pink sticky top-0 z-20 bg-linear-to-br to-[#FF8FB1] px-5 pt-5 pb-4 text-white shadow-[0_4px_20px_rgba(255,107,157,0.3)]">
         <div className="mb-3 flex items-baseline justify-between">
           <h1 className="m-0 text-[28px] font-black tracking-tight">Rulu</h1>
-          <span className="text-sm font-bold opacity-90">
-            ✨ Week of{" "}
-            {new Date(weekStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold opacity-90">
+              ✨ Week of{" "}
+              {new Date(weekStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            </span>
+            <button
+              onClick={onLogout}
+              className="cursor-pointer rounded-full border-2 border-white/30 bg-white/20 px-2.5 py-0.5 text-sm font-bold text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/30"
+              title="Switch user"
+            >
+              {currentMember.emoji} {currentMember.name}
+            </button>
+          </div>
         </div>
         <ProgressBar done={doneTodos} total={totalTodos} />
       </header>
@@ -179,12 +193,14 @@ export function WeekGrid() {
         <ItemModal
           editItem={null}
           defaultDay={addModalDay}
+          memberId={currentMember.id}
           onSave={(data) => {
             addItem({
               type: data.type,
               title: data.title,
               day: data.day,
               emoji: data.emoji,
+              owner_id: data.personal ? currentMember.id : null,
               ...(data.type === "event" && data.time ? { time: data.time } : {}),
             });
             setAddModalDay(null);
@@ -198,6 +214,7 @@ export function WeekGrid() {
         <ItemModal
           editItem={editItem}
           defaultDay={editItem.day}
+          memberId={currentMember.id}
           onSave={(data) => {
             updateItem(editItem.id, {
               title: data.title,
@@ -205,6 +222,7 @@ export function WeekGrid() {
               emoji: data.emoji,
               day: data.day,
               time: data.type === "event" ? data.time : undefined,
+              owner_id: data.personal ? currentMember.id : null,
             });
             setEditItem(null);
           }}
