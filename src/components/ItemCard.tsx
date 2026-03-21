@@ -83,7 +83,7 @@ export function ItemCard({
           </span>
           {item.time && (
             <span className="mt-0.5 block text-[10px] font-bold text-[#B8860B]">
-              ⏰ {item.time}
+              ⏰ {item.time.slice(0, 5)}
             </span>
           )}
           {item.frequency && item.frequency !== "weekly" && (
