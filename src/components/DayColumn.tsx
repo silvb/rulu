@@ -6,6 +6,7 @@ interface DayColumnProps {
   dayIndex: number;
   items: Item[];
   completions: Record<string, boolean>;
+  inactiveItemIds: Set<string>;
   celebratingId: string | null;
   isToday: boolean;
   isDropTarget: boolean;
@@ -23,6 +24,7 @@ export function DayColumn({
   dayIndex,
   items,
   completions,
+  inactiveItemIds,
   celebratingId,
   isToday,
   isDropTarget,
@@ -78,6 +80,7 @@ export function DayColumn({
             key={item.id}
             item={item}
             isDone={item.type === "todo" && !!completions[item.id]}
+            isInactive={inactiveItemIds.has(item.id)}
             isCelebrating={celebratingId === item.id}
             isMobile={isMobile}
             onToggle={onToggle}

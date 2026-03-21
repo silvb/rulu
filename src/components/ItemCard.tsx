@@ -4,6 +4,7 @@ import type { Item, ContextMenuState } from "../lib/types";
 interface ItemCardProps {
   item: Item;
   isDone: boolean;
+  isInactive: boolean;
   isCelebrating: boolean;
   isMobile: boolean;
   onToggle: (id: string) => void;
@@ -15,6 +16,7 @@ interface ItemCardProps {
 export function ItemCard({
   item,
   isDone,
+  isInactive,
   isCelebrating,
   isMobile,
   onToggle,
@@ -43,7 +45,7 @@ export function ItemCard({
       }}
       onClick={() => {
         if (wasLongPress()) return;
-        if (item.type === "todo") onToggle(item.id);
+        if (item.type === "todo" && !isInactive) onToggle(item.id);
       }}
       className={[
         "relative rounded-xl border-2 px-2.5 py-2 select-none transition-all duration-200",
@@ -52,7 +54,8 @@ export function ItemCard({
           : isPersonal
             ? "bg-linear-to-br from-[#F5F3FF] to-[#EDE9FE] border-[#C4B5FD]"
             : "bg-white border-pink-light",
-        isDone && "bg-green-light border-green opacity-80",
+        isDone && !isInactive && "bg-green-light border-green opacity-80",
+        isInactive && "opacity-40 grayscale",
         isCelebrating && "scale-105 border-green shadow-[0_0_20px_rgba(74,222,128,0.25)]",
         isMobile ? "cursor-default" : "cursor-grab",
       ]
@@ -81,6 +84,11 @@ export function ItemCard({
           {item.time && (
             <span className="mt-0.5 block text-[10px] font-bold text-[#B8860B]">
               ⏰ {item.time}
+            </span>
+          )}
+          {item.frequency && item.frequency !== "weekly" && (
+            <span className="text-slate-muted mt-0.5 block text-[10px] font-bold">
+              {item.frequency === "biweekly" ? "every 2 weeks" : "monthly"}
             </span>
           )}
         </div>

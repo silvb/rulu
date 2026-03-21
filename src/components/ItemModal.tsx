@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { DAYS, EMOJI_OPTIONS } from "../lib/constants";
-import type { Item, ItemType } from "../lib/types";
+import type { Item, ItemType, Frequency } from "../lib/types";
 
 interface ItemModalProps {
   editItem: Item | null;
@@ -13,6 +13,7 @@ interface ItemModalProps {
     emoji: string;
     day: number;
     personal: boolean;
+    frequency: Frequency;
   }) => void;
   onDelete?: (id: string) => void;
   onClose: () => void;
@@ -32,9 +33,8 @@ export function ItemModal({
   const [time, setTime] = useState(editItem?.time ?? "");
   const [emoji, setEmoji] = useState(editItem?.emoji ?? "📋");
   const [day, setDay] = useState(editItem?.day ?? defaultDay);
-  const [personal, setPersonal] = useState(
-    isEdit ? editItem.owner_id === memberId : false,
-  );
+  const [frequency, setFrequency] = useState<Frequency>(editItem?.frequency ?? "weekly");
+  const [personal, setPersonal] = useState(isEdit ? editItem.owner_id === memberId : false);
 
   const handleSave = () => {
     if (!title.trim()) return;
@@ -45,6 +45,7 @@ export function ItemModal({
       emoji,
       day,
       personal,
+      frequency: type === "todo" ? frequency : "weekly",
     });
   };
 
@@ -156,6 +157,37 @@ export function ItemModal({
                   ].join(" ")}
                 >
                   {d}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Frequency picker (todos only) */}
+        {type === "todo" && (
+          <div className="mb-4">
+            <label className="text-slate-muted mb-1.5 block text-[13px] font-extrabold tracking-wide uppercase">
+              How often?
+            </label>
+            <div className="flex gap-2">
+              {(
+                [
+                  { value: "weekly", label: "Weekly" },
+                  { value: "biweekly", label: "Bi-weekly" },
+                  { value: "monthly", label: "Monthly" },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setFrequency(opt.value)}
+                  className={[
+                    "flex-1 py-2.5 rounded-xl border-2 text-sm font-bold cursor-pointer transition-all duration-200",
+                    frequency === opt.value
+                      ? "bg-pink-pale border-pink text-pink"
+                      : "bg-white border-pink-light text-slate-dark",
+                  ].join(" ")}
+                >
+                  {opt.label}
                 </button>
               ))}
             </div>

@@ -1,4 +1,5 @@
 export type ItemType = "todo" | "event";
+export type Frequency = "weekly" | "biweekly" | "monthly";
 
 export interface Item {
   id: string;
@@ -9,6 +10,7 @@ export interface Item {
   day: number; // 0 = Monday, 6 = Sunday
   emoji: string;
   time?: string; // HH:MM, only for events
+  frequency?: Frequency; // default: weekly
   sort_order?: number;
 }
 

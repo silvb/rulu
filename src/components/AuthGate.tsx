@@ -67,9 +67,7 @@ export function AuthGate({ onAuthenticated }: AuthGateProps) {
           />
         </div>
 
-        {error && (
-          <p className="mb-4 text-center text-sm font-bold text-[#DC2626]">{error}</p>
-        )}
+        {error && <p className="mb-4 text-center text-sm font-bold text-[#DC2626]">{error}</p>}
 
         <button
           type="submit"

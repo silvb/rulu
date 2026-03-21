@@ -30,10 +30,7 @@ export function useMember() {
       setHouseholdId(hid);
 
       // Fetch members for this household
-      const { data } = await supabase
-        .from("members")
-        .select("*")
-        .eq("household_id", hid);
+      const { data } = await supabase.from("members").select("*").eq("household_id", hid);
 
       if (cancelled) return;
 

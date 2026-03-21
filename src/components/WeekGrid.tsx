@@ -6,7 +6,7 @@ import { ContextMenu } from "./ContextMenu";
 import { ItemModal } from "./ItemModal";
 import { useItems } from "../hooks/useItems";
 import { usePush } from "../hooks/usePush";
-import { getWeekStart, getTodayIndex } from "../lib/week";
+import { getTodayIndex, isItemVisibleInWeek } from "../lib/week";
 import { DAYS } from "../lib/constants";
 import type { Item, Member, ContextMenuState } from "../lib/types";
 
@@ -21,6 +21,7 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
   const {
     items,
     completions,
+    weekStart,
     loaded,
     addItem,
     updateItem,
@@ -29,7 +30,13 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
     toggleCompletion,
   } = useItems(currentMember.id, householdId);
 
-  const { supported: pushSupported, subscribed, loading: pushLoading, subscribe, unsubscribe } = usePush(householdId);
+  const {
+    supported: pushSupported,
+    subscribed,
+    loading: pushLoading,
+    subscribe,
+    unsubscribe,
+  } = usePush(householdId);
 
   const [isMobile, setIsMobile] = useState(false);
   const [mobileDay, setMobileDay] = useState<number | null>(null);
@@ -40,7 +47,10 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
   const [celebratingId, setCelebratingId] = useState<string | null>(null);
 
   const todayIndex = getTodayIndex();
-  const weekStart = getWeekStart();
+
+  const inactiveItemIds = new Set(
+    items.filter((item) => !isItemVisibleInWeek(item.frequency, weekStart)).map((item) => item.id),
+  );
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -85,8 +95,10 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
     setDragOverDay(null);
   }, []);
 
-  const totalTodos = items.filter((i) => i.type === "todo").length;
-  const doneTodos = items.filter((i) => i.type === "todo" && completions[i.id]).length;
+  const totalTodos = items.filter((i) => i.type === "todo" && !inactiveItemIds.has(i.id)).length;
+  const doneTodos = items.filter(
+    (i) => i.type === "todo" && !inactiveItemIds.has(i.id) && completions[i.id],
+  ).length;
 
   if (!loaded) {
     return (
@@ -153,6 +165,7 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
               dayIndex={activeMobileDay}
               items={items}
               completions={completions}
+              inactiveItemIds={inactiveItemIds}
               celebratingId={celebratingId}
               isToday={activeMobileDay === todayIndex}
               isDropTarget={false}
@@ -171,6 +184,7 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
               dayIndex={i}
               items={items}
               completions={completions}
+              inactiveItemIds={inactiveItemIds}
               celebratingId={celebratingId}
               isToday={i === todayIndex}
               isDropTarget={dragOverDay === i}
@@ -216,6 +230,7 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
               day: data.day,
               emoji: data.emoji,
               owner_id: data.personal ? currentMember.id : null,
+              frequency: data.frequency,
               ...(data.type === "event" && data.time ? { time: data.time } : {}),
             });
             setAddModalDay(null);
@@ -238,6 +253,7 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
               day: data.day,
               time: data.type === "event" ? data.time : undefined,
               owner_id: data.personal ? currentMember.id : null,
+              frequency: data.frequency,
             });
             setEditItem(null);
           }}

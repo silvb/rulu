@@ -124,7 +124,12 @@ export function useItems(memberId: string, householdId: string) {
     async (item: Omit<Item, "id">) => {
       // Optimistic: add with a temporary ID immediately
       const tempId = `temp-${Date.now()}`;
-      const optimistic: Item = { ...item, id: tempId, household_id: householdId, owner_id: item.owner_id ?? null };
+      const optimistic: Item = {
+        ...item,
+        id: tempId,
+        household_id: householdId,
+        owner_id: item.owner_id ?? null,
+      };
       setItems((prev) => [...prev, optimistic]);
 
       const row = {
@@ -145,34 +150,25 @@ export function useItems(memberId: string, householdId: string) {
     [householdId],
   );
 
-  const updateItem = useCallback(
-    async (id: string, updates: Partial<Item>) => {
-      setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...updates } : it)));
-      await supabase.from("items").update(updates).eq("id", id);
-    },
-    [],
-  );
+  const updateItem = useCallback(async (id: string, updates: Partial<Item>) => {
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...updates } : it)));
+    await supabase.from("items").update(updates).eq("id", id);
+  }, []);
 
-  const deleteItem = useCallback(
-    async (id: string) => {
-      setItems((prev) => prev.filter((it) => it.id !== id));
-      setCompletions((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-      await supabase.from("items").delete().eq("id", id);
-    },
-    [],
-  );
+  const deleteItem = useCallback(async (id: string) => {
+    setItems((prev) => prev.filter((it) => it.id !== id));
+    setCompletions((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    await supabase.from("items").delete().eq("id", id);
+  }, []);
 
-  const moveItem = useCallback(
-    async (id: string, toDay: number) => {
-      setItems((prev) => prev.map((it) => (it.id === id ? { ...it, day: toDay } : it)));
-      await supabase.from("items").update({ day: toDay }).eq("id", id);
-    },
-    [],
-  );
+  const moveItem = useCallback(async (id: string, toDay: number) => {
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, day: toDay } : it)));
+    await supabase.from("items").update({ day: toDay }).eq("id", id);
+  }, []);
 
   const toggleCompletion = useCallback(
     async (id: string) => {
@@ -188,11 +184,7 @@ export function useItems(memberId: string, householdId: string) {
       });
 
       if (wasDone) {
-        await supabase
-          .from("completions")
-          .delete()
-          .eq("item_id", id)
-          .eq("week_start", weekStart);
+        await supabase.from("completions").delete().eq("item_id", id).eq("week_start", weekStart);
       } else {
         await supabase.from("completions").insert({ item_id: id, week_start: weekStart });
       }
@@ -203,6 +195,7 @@ export function useItems(memberId: string, householdId: string) {
   return {
     items,
     completions,
+    weekStart,
     loaded,
     addItem,
     updateItem,
