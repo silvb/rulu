@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DAYS, EMOJI_OPTIONS } from "../lib/constants";
 import type { Item, ItemType, Frequency } from "../lib/types";
+import { getScheduledWeekForOneTimeItem, getWeekStart } from "../lib/week";
 
 interface ItemModalProps {
   editItem: Item | null;
@@ -15,6 +16,8 @@ interface ItemModalProps {
     personal: boolean;
     frequency: Frequency;
     frequency_phase: number;
+    is_one_time: boolean;
+    scheduled_for_week?: string;
   }) => void;
   onDelete?: (id: string) => void;
   onClose: () => void;
@@ -37,9 +40,11 @@ export function ItemModal({
   const [frequency, setFrequency] = useState<Frequency>(editItem?.frequency ?? "weekly");
   const [frequencyPhase, setFrequencyPhase] = useState(editItem?.frequency_phase ?? 0);
   const [personal, setPersonal] = useState(isEdit ? editItem.owner_id === memberId : false);
+  const [isOneTime, setIsOneTime] = useState(editItem?.is_one_time ?? false);
 
   const handleSave = () => {
     if (!title.trim()) return;
+    const scheduledForWeek = isOneTime && !isEdit ? getScheduledWeekForOneTimeItem(day) : editItem?.scheduled_for_week;
     onSave({
       title: title.trim(),
       type,
@@ -47,8 +52,10 @@ export function ItemModal({
       emoji,
       day,
       personal,
-      frequency: type === "todo" ? frequency : "weekly",
-      frequency_phase: type === "todo" && frequency !== "weekly" ? frequencyPhase : 0,
+      frequency: type === "todo" && !isOneTime ? frequency : "weekly",
+      frequency_phase: type === "todo" && !isOneTime && frequency !== "weekly" ? frequencyPhase : 0,
+      is_one_time: isOneTime,
+      scheduled_for_week: scheduledForWeek,
     });
   };
 
@@ -166,8 +173,8 @@ export function ItemModal({
           </div>
         )}
 
-        {/* Frequency picker (todos only) */}
-        {type === "todo" && (
+        {/* Frequency picker (todos only, not one-time) */}
+        {type === "todo" && !isOneTime && (
           <div className="mb-4">
             <label className="text-slate-muted mb-1.5 block text-[13px] font-extrabold tracking-wide uppercase">
               How often?
@@ -201,7 +208,7 @@ export function ItemModal({
         )}
 
         {/* Frequency phase picker */}
-        {type === "todo" && frequency === "biweekly" && (
+        {type === "todo" && !isOneTime && frequency === "biweekly" && (
           <div className="mb-4">
             <label className="text-slate-muted mb-1.5 block text-[13px] font-extrabold tracking-wide uppercase">
               Which weeks?
@@ -228,7 +235,7 @@ export function ItemModal({
           </div>
         )}
 
-        {type === "todo" && frequency === "monthly" && (
+        {type === "todo" && !isOneTime && frequency === "monthly" && (
           <div className="mb-4">
             <label className="text-slate-muted mb-1.5 block text-[13px] font-extrabold tracking-wide uppercase">
               Which week of the month?
@@ -272,6 +279,37 @@ export function ItemModal({
             <span className="text-sm font-bold">
               {personal ? "Just for me" : "Shared with household"}
             </span>
+          </button>
+        </div>
+
+        {/* One-time toggle */}
+        <div className="mb-4">
+          <button
+            onClick={() => {
+              setIsOneTime((p) => !p);
+              if (!isOneTime) {
+                setFrequency("weekly");
+                setFrequencyPhase(0);
+              }
+            }}
+            className={[
+              "flex w-full items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer transition-all duration-200",
+              isOneTime
+                ? "bg-[#FEF3C7] border-[#F59E0B] text-[#D97706]"
+                : "bg-white border-pink-light text-slate-muted",
+            ].join(" ")}
+          >
+            <span className="text-lg">{isOneTime ? "⚡" : "🔄"}</span>
+            <div className="text-left flex-1">
+              <span className="text-sm font-bold block">
+                {isOneTime ? "One-time item" : "Recurring item"}
+              </span>
+              {isOneTime && !isEdit && (
+                <span className="text-xs opacity-75">
+                  {getScheduledWeekForOneTimeItem(day) === getWeekStart() ? "Scheduled for this week" : "Scheduled for next week"}
+                </span>
+              )}
+            </div>
           </button>
         </div>
 

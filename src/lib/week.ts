@@ -15,6 +15,23 @@ export function getTodayIndex(): number {
   return dow === 0 ? 6 : dow - 1;
 }
 
+/** Returns the ISO date string for next week's Monday. */
+export function getNextWeekStart(): string {
+  const current = new Date(getWeekStart() + "T00:00:00");
+  current.setDate(current.getDate() + 7);
+  return current.toISOString().slice(0, 10);
+}
+
+/** 
+ * Determines the appropriate week for a one-time item based on:
+ * - If item day >= today: current week
+ * - If item day < today: next week
+ */
+export function getScheduledWeekForOneTimeItem(itemDay: number): string {
+  const today = getTodayIndex();
+  return itemDay >= today ? getWeekStart() : getNextWeekStart();
+}
+
 /** Returns the ISO week number for a given date. */
 export function getISOWeekNumber(date: Date): number {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -57,4 +74,13 @@ export function isItemVisibleInWeek(
   }
 
   return true;
+}
+
+/**
+ * Checks if a one-time item should be active (clickable) in the current week.
+ * One-time items are only active when scheduled_for_week matches current week.
+ */
+export function isOneTimeItemActive(scheduledForWeek: string | undefined): boolean {
+  if (!scheduledForWeek) return true; // Regular items are always active
+  return scheduledForWeek === getWeekStart();
 }

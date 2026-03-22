@@ -1,5 +1,6 @@
 import { useLongPress } from "../hooks/useLongPress";
 import type { Item, ContextMenuState } from "../lib/types";
+import { isOneTimeItemActive, getWeekStart } from "../lib/week";
 
 interface ItemCardProps {
   item: Item;
@@ -30,6 +31,9 @@ export function ItemCard({
 
   const isEvent = item.type === "event";
   const isPersonal = !!item.owner_id;
+  const isOneTime = !!item.is_one_time;
+  const isScheduledForFuture = item.scheduled_for_week && item.scheduled_for_week !== getWeekStart();
+  const isOneTimeInactive = isOneTime && !isOneTimeItemActive(item.scheduled_for_week);
 
   return (
     <div
@@ -45,7 +49,7 @@ export function ItemCard({
       }}
       onClick={() => {
         if (wasLongPress()) return;
-        if (item.type === "todo" && !isInactive) onToggle(item.id);
+        if (item.type === "todo" && !isInactive && !isOneTimeInactive) onToggle(item.id);
       }}
       className={[
         "relative rounded-xl border-2 px-2.5 py-2 select-none transition-all duration-200",
@@ -54,8 +58,8 @@ export function ItemCard({
           : isPersonal
             ? "bg-linear-to-br from-[#F5F3FF] to-[#EDE9FE] border-[#C4B5FD]"
             : "bg-white border-pink-light",
-        isDone && !isInactive && "bg-green-light border-green opacity-80",
-        isInactive && "opacity-40 grayscale",
+        isDone && !isInactive && !isOneTimeInactive && "bg-green-light border-green opacity-80",
+        (isInactive || isOneTimeInactive) && "opacity-40 grayscale",
         isCelebrating && "scale-105 border-green shadow-[0_0_20px_rgba(74,222,128,0.25)]",
         isMobile ? "cursor-default" : "cursor-grab",
       ]
@@ -80,19 +84,29 @@ export function ItemCard({
                 👤
               </span>
             )}
+            {isOneTime && (
+              <span className="ml-1 text-[10px] text-[#D97706]" title="One-time item">
+                ⚡
+              </span>
+            )}
           </span>
           {item.time && (
             <span className="mt-0.5 block text-[10px] font-bold text-[#B8860B]">
               ⏰ {item.time.slice(0, 5)}
             </span>
           )}
-          {item.frequency && item.frequency !== "weekly" && (
+          {item.frequency && item.frequency !== "weekly" && !isOneTime && (
             <span className="text-slate-muted mt-0.5 block text-[10px] font-bold">
               {item.frequency === "biweekly"
                 ? item.frequency_phase === 1
                   ? "every 2 wks (even)"
                   : "every 2 wks (odd)"
                 : `monthly (${["1st", "2nd", "3rd", "4th"][item.frequency_phase ?? 0]} wk)`}
+            </span>
+          )}
+          {isScheduledForFuture && (
+            <span className="text-slate-muted mt-0.5 block text-[10px] font-bold">
+              📅 scheduled for next week
             </span>
           )}
         </div>

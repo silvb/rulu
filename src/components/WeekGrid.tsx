@@ -6,7 +6,7 @@ import { ContextMenu } from "./ContextMenu";
 import { ItemModal } from "./ItemModal";
 import { useItems } from "../hooks/useItems";
 import { usePush } from "../hooks/usePush";
-import { getTodayIndex, isItemVisibleInWeek } from "../lib/week";
+import { getTodayIndex, isItemVisibleInWeek, isOneTimeItemActive } from "../lib/week";
 import { DAYS } from "../lib/constants";
 import type { Item, Member, ContextMenuState } from "../lib/types";
 
@@ -50,7 +50,14 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
 
   const inactiveItemIds = new Set(
     items
-      .filter((item) => !isItemVisibleInWeek(item.frequency, weekStart, item.frequency_phase))
+      .filter((item) => {
+        // Regular frequency-based filtering for non-one-time items
+        if (!item.is_one_time) {
+          return !isItemVisibleInWeek(item.frequency, weekStart, item.frequency_phase);
+        }
+        // One-time items are inactive if not scheduled for current week
+        return !isOneTimeItemActive(item.scheduled_for_week);
+      })
       .map((item) => item.id),
   );
 
@@ -234,6 +241,8 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
               owner_id: data.personal ? currentMember.id : null,
               frequency: data.frequency,
               frequency_phase: data.frequency_phase,
+              is_one_time: data.is_one_time,
+              scheduled_for_week: data.scheduled_for_week,
               ...(data.type === "event" && data.time ? { time: data.time } : {}),
             });
             setAddModalDay(null);
@@ -258,6 +267,8 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
               owner_id: data.personal ? currentMember.id : null,
               frequency: data.frequency,
               frequency_phase: data.frequency_phase,
+              is_one_time: data.is_one_time,
+              scheduled_for_week: data.scheduled_for_week,
             });
             setEditItem(null);
           }}

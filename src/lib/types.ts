@@ -13,6 +13,8 @@ export interface Item {
   frequency?: Frequency; // default: weekly
   frequency_phase?: number; // biweekly: 0=odd weeks, 1=even weeks; monthly: 0–3 for 1st–4th week
   sort_order?: number;
+  is_one_time?: boolean; // true for one-time items
+  scheduled_for_week?: string; // ISO date string for the target week (e.g. '2026-03-23')
 }
 
 export interface Completion {

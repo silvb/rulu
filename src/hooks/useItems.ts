@@ -121,7 +121,7 @@ export function useItems(memberId: string, householdId: string) {
   }, [weekStart, memberId]);
 
   const addItem = useCallback(
-    async (item: Omit<Item, "id">) => {
+    async (item: Omit<Item, "id" | "household_id">) => {
       // Optimistic: add with a temporary ID immediately
       const tempId = `temp-${Date.now()}`;
       const optimistic: Item = {
