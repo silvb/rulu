@@ -31,6 +31,31 @@ export function useItems(memberId: string, householdId: string) {
       if (cancelled) return;
 
       if (itemsRes.data) {
+        const completedItemIds = new Set(
+          (completionsRes.data || []).map((c: { item_id: string }) => c.item_id),
+        );
+
+        // Roll forward uncompleted one-time items from past weeks
+        const rollForwardIds: string[] = [];
+        for (const item of itemsRes.data as Item[]) {
+          if (
+            item.is_one_time &&
+            item.scheduled_for_week &&
+            item.scheduled_for_week < weekStart &&
+            !completedItemIds.has(item.id)
+          ) {
+            item.scheduled_for_week = weekStart;
+            rollForwardIds.push(item.id);
+          }
+        }
+        if (rollForwardIds.length > 0) {
+          supabase
+            .from("items")
+            .update({ scheduled_for_week: weekStart })
+            .in("id", rollForwardIds)
+            .then();
+        }
+
         setItems(itemsRes.data as Item[]);
       }
 

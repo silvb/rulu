@@ -17,7 +17,6 @@ function getCurrentWeekStart(): string {
 }
 
 Deno.serve(async (req) => {
-  // Verify cron secret (passed via x-cron-secret to avoid Supabase gateway conflicts)
   const cronSecret = Deno.env.get("CRON_SECRET");
   if (cronSecret) {
     const provided = req.headers.get("x-cron-secret");
@@ -26,76 +25,62 @@ Deno.serve(async (req) => {
     }
   }
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
   const currentWeekStart = getCurrentWeekStart();
+  const results: Record<string, unknown> = { currentWeekStart };
 
   try {
-    // Find completed one-time items that are scheduled for this week or earlier
-    // (one-time items that are completed and should be cleaned up)
-    const { data: itemsToDelete, error: fetchError } = await supabase
+    // 1. Delete completed one-time items from past weeks.
+    //    Uncompleted ones are kept — the frontend rolls them forward.
+    //    Use a two-step approach to avoid !inner join issues.
+    const { data: oneTimeItems } = await supabase
       .from("items")
-      .select(`
-        id,
-        title,
-        is_one_time,
-        scheduled_for_week,
-        completions!inner (
-          item_id,
-          week_start
-        )
-      `)
+      .select("id, title, scheduled_for_week")
       .eq("is_one_time", true)
-      .lte("scheduled_for_week", currentWeekStart);
+      .lt("scheduled_for_week", currentWeekStart);
 
-    if (fetchError) {
-      console.error("Error fetching completed one-time items:", fetchError);
-      return Response.json({ 
-        error: fetchError.message, 
-        deleted: 0 
-      }, { status: 500 });
+    const candidateIds = (oneTimeItems || []).map((i) => i.id);
+    let deletedItems = 0;
+
+    if (candidateIds.length > 0) {
+      // Find which of these have completions
+      const { data: completedRows } = await supabase
+        .from("completions")
+        .select("item_id")
+        .in("item_id", candidateIds);
+
+      const completedIds = [...new Set((completedRows || []).map((c) => c.item_id))];
+
+      if (completedIds.length > 0) {
+        const { error } = await supabase.from("items").delete().in("id", completedIds);
+        if (error) {
+          console.error("Error deleting one-time items:", error);
+          results.itemsError = error.message;
+        } else {
+          deletedItems = completedIds.length;
+        }
+      }
     }
+    results.deletedItems = deletedItems;
 
-    if (!itemsToDelete || itemsToDelete.length === 0) {
-      return Response.json({ 
-        message: "No completed one-time items to clean up", 
-        deleted: 0 
-      });
+    // 2. Delete stale completions from past weeks (recurring items accumulate these)
+    const { count, error: staleError } = await supabase
+      .from("completions")
+      .delete({ count: "exact" })
+      .lt("week_start", currentWeekStart);
+
+    if (staleError) {
+      console.error("Error deleting stale completions:", staleError);
+      results.completionsError = staleError.message;
     }
+    results.staleCompletions = count ?? 0;
 
-    // Extract item IDs to delete
-    const itemIds = itemsToDelete.map(item => item.id);
-
-    // Delete the completed one-time items
-    const { error: deleteError } = await supabase
-      .from("items")
-      .delete()
-      .in("id", itemIds);
-
-    if (deleteError) {
-      console.error("Error deleting completed one-time items:", deleteError);
-      return Response.json({ 
-        error: deleteError.message, 
-        deleted: 0 
-      }, { status: 500 });
-    }
-
-    console.log(`Cleaned up ${itemIds.length} completed one-time items`);
-
-    return Response.json({ 
-      message: `Successfully cleaned up ${itemIds.length} completed one-time items`,
-      deleted: itemIds.length,
-      deletedItems: itemsToDelete.map(item => ({
-        id: item.id,
-        title: item.title,
-        scheduled_for_week: item.scheduled_for_week
-      }))
-    });
-
+    console.log(`Cleanup: ${deletedItems} one-time items, ${count ?? 0} stale completions`);
+    return Response.json(results);
   } catch (error: any) {
-    console.error("Unexpected error in cleanup:", error);
-    return Response.json({ 
-      error: error.message,
-      deleted: 0 
-    }, { status: 500 });
+    console.error("Unexpected error:", error);
+    return Response.json({ ...results, error: error.message }, { status: 500 });
   }
 });

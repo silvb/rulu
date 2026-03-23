@@ -32,7 +32,8 @@ export function ItemCard({
   const isEvent = item.type === "event";
   const isPersonal = !!item.owner_id;
   const isOneTime = !!item.is_one_time;
-  const isScheduledForFuture = item.scheduled_for_week && item.scheduled_for_week !== getWeekStart();
+  const isScheduledForFuture =
+    item.scheduled_for_week && item.scheduled_for_week !== getWeekStart();
   const isOneTimeInactive = isOneTime && !isOneTimeItemActive(item.scheduled_for_week);
 
   return (

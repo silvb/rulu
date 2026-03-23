@@ -6,7 +6,7 @@ import { ContextMenu } from "./ContextMenu";
 import { ItemModal } from "./ItemModal";
 import { useItems } from "../hooks/useItems";
 import { usePush } from "../hooks/usePush";
-import { getTodayIndex, isItemVisibleInWeek, isOneTimeItemActive } from "../lib/week";
+import { getTodayIndex, isItemVisibleInWeek } from "../lib/week";
 import { DAYS } from "../lib/constants";
 import type { Item, Member, ContextMenuState } from "../lib/types";
 
@@ -48,15 +48,27 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
 
   const todayIndex = getTodayIndex();
 
+  // Roll forward uncompleted one-time items from past weeks to the current week.
+  // Completed ones are filtered out (cron deletes them, but this is a client-side safety net).
+  const visibleItems = items.filter((item) => {
+    if (!item.is_one_time || !item.scheduled_for_week || item.scheduled_for_week >= weekStart) {
+      return true;
+    }
+    // Past-week one-time item: hide if completed, roll forward if not
+    if (completions[item.id]) return false;
+    return true;
+  });
+
   const inactiveItemIds = new Set(
-    items
+    visibleItems
       .filter((item) => {
         // Regular frequency-based filtering for non-one-time items
         if (!item.is_one_time) {
           return !isItemVisibleInWeek(item.frequency, weekStart, item.frequency_phase);
         }
-        // One-time items are inactive if not scheduled for current week
-        return !isOneTimeItemActive(item.scheduled_for_week);
+        // One-time items: inactive only if scheduled for the future (not yet their week)
+        // Past-week items that survived filtering are uncompleted roll-forwards — keep active
+        return item.scheduled_for_week ? item.scheduled_for_week > weekStart : false;
       })
       .map((item) => item.id),
   );
@@ -104,8 +116,10 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
     setDragOverDay(null);
   }, []);
 
-  const totalTodos = items.filter((i) => i.type === "todo" && !inactiveItemIds.has(i.id)).length;
-  const doneTodos = items.filter(
+  const totalTodos = visibleItems.filter(
+    (i) => i.type === "todo" && !inactiveItemIds.has(i.id),
+  ).length;
+  const doneTodos = visibleItems.filter(
     (i) => i.type === "todo" && !inactiveItemIds.has(i.id) && completions[i.id],
   ).length;
 
@@ -165,14 +179,14 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
           <DayTabs
             activeDay={activeMobileDay}
             todayIndex={todayIndex}
-            items={items}
+            items={visibleItems}
             completions={completions}
             onSelectDay={setMobileDay}
           />
           <div className="p-2">
             <DayColumn
               dayIndex={activeMobileDay}
-              items={items}
+              items={visibleItems}
               completions={completions}
               inactiveItemIds={inactiveItemIds}
               celebratingId={celebratingId}
@@ -191,7 +205,7 @@ export function WeekGrid({ currentMember, householdId, onLogout, onSignOut }: We
             <DayColumn
               key={i}
               dayIndex={i}
-              items={items}
+              items={visibleItems}
               completions={completions}
               inactiveItemIds={inactiveItemIds}
               celebratingId={celebratingId}

@@ -44,7 +44,8 @@ export function ItemModal({
 
   const handleSave = () => {
     if (!title.trim()) return;
-    const scheduledForWeek = isOneTime && !isEdit ? getScheduledWeekForOneTimeItem(day) : editItem?.scheduled_for_week;
+    const scheduledForWeek =
+      isOneTime && !isEdit ? getScheduledWeekForOneTimeItem(day) : editItem?.scheduled_for_week;
     onSave({
       title: title.trim(),
       type,
@@ -214,10 +215,12 @@ export function ItemModal({
               Which weeks?
             </label>
             <div className="flex gap-2">
-              {([
-                { value: 0, label: "Odd weeks" },
-                { value: 1, label: "Even weeks" },
-              ] as const).map((opt) => (
+              {(
+                [
+                  { value: 0, label: "Odd weeks" },
+                  { value: 1, label: "Even weeks" },
+                ] as const
+              ).map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => setFrequencyPhase(opt.value)}
@@ -241,12 +244,14 @@ export function ItemModal({
               Which week of the month?
             </label>
             <div className="flex gap-2">
-              {([
-                { value: 0, label: "1st" },
-                { value: 1, label: "2nd" },
-                { value: 2, label: "3rd" },
-                { value: 3, label: "4th" },
-              ] as const).map((opt) => (
+              {(
+                [
+                  { value: 0, label: "1st" },
+                  { value: 1, label: "2nd" },
+                  { value: 2, label: "3rd" },
+                  { value: 3, label: "4th" },
+                ] as const
+              ).map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => setFrequencyPhase(opt.value)}
@@ -300,13 +305,15 @@ export function ItemModal({
             ].join(" ")}
           >
             <span className="text-lg">{isOneTime ? "⚡" : "🔄"}</span>
-            <div className="text-left flex-1">
-              <span className="text-sm font-bold block">
+            <div className="flex-1 text-left">
+              <span className="block text-sm font-bold">
                 {isOneTime ? "One-time item" : "Recurring item"}
               </span>
               {isOneTime && !isEdit && (
                 <span className="text-xs opacity-75">
-                  {getScheduledWeekForOneTimeItem(day) === getWeekStart() ? "Scheduled for this week" : "Scheduled for next week"}
+                  {getScheduledWeekForOneTimeItem(day) === getWeekStart()
+                    ? "Scheduled for this week"
+                    : "Scheduled for next week"}
                 </span>
               )}
             </div>

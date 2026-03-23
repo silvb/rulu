@@ -1,3 +1,11 @@
+/** Formats a Date as YYYY-MM-DD using local time (not UTC). */
+function toLocalDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 /** Returns the ISO date string (YYYY-MM-DD) of Monday for the current week. */
 export function getWeekStart(): string {
   const now = new Date();
@@ -6,7 +14,7 @@ export function getWeekStart(): string {
   const monday = new Date(now);
   monday.setHours(0, 0, 0, 0);
   monday.setDate(monday.getDate() + diff);
-  return monday.toISOString().slice(0, 10);
+  return toLocalDateString(monday);
 }
 
 /** Returns the current day index (0 = Monday, 6 = Sunday). */
@@ -19,10 +27,10 @@ export function getTodayIndex(): number {
 export function getNextWeekStart(): string {
   const current = new Date(getWeekStart() + "T00:00:00");
   current.setDate(current.getDate() + 7);
-  return current.toISOString().slice(0, 10);
+  return toLocalDateString(current);
 }
 
-/** 
+/**
  * Determines the appropriate week for a one-time item based on:
  * - If item day >= today: current week
  * - If item day < today: next week
