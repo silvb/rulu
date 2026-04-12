@@ -52,7 +52,7 @@ export function getISOWeekNumber(date: Date): number {
  * Checks whether an item should be visible in a given week.
  * - weekly: always visible
  * - biweekly: phase 0 = odd ISO weeks, phase 1 = even ISO weeks
- * - monthly: phase 0–3 = 1st–4th week of the month (week containing days 1–7, 8–14, 15–21, 22–28)
+ * - monthly: phase 0–3 = 1st–4th Mon–Sun week of the month (week 0 = the Mon–Sun week containing the 1st)
  */
 export function isItemVisibleInWeek(
   frequency: string | undefined,
@@ -70,15 +70,31 @@ export function isItemVisibleInWeek(
   }
 
   if (freq === "monthly") {
-    const rangeStart = phase * 7 + 1;
-    const rangeEnd = rangeStart + 6;
+    // Week of month is defined by Mon–Sun weeks:
+    // Week 0 = the Mon–Sun week containing the 1st of the month.
+    // Week 1 = the next Mon–Sun week, etc.
+
+    // Check if this week contains a 1st (making it week 0 of that month)
     for (let offset = 0; offset < 7; offset++) {
       const d = new Date(monday);
       d.setDate(d.getDate() + offset);
-      const dom = d.getDate();
-      if (dom >= rangeStart && dom <= rangeEnd) return true;
+      if (d.getDate() === 1) return phase === 0;
     }
-    return false;
+
+    // No 1st found — all days are in the same month.
+    // Find the Monday of week 0 (the Mon–Sun week containing the 1st).
+    const month = monday.getMonth();
+    const year = monday.getFullYear();
+    const firstOfMonth = new Date(year, month, 1);
+    const dow = firstOfMonth.getDay(); // 0=Sun, 1=Mon, …
+    const diff = dow === 0 ? -6 : 1 - dow;
+    const week0Monday = new Date(firstOfMonth);
+    week0Monday.setDate(week0Monday.getDate() + diff);
+
+    const weekNum = Math.round(
+      (monday.getTime() - week0Monday.getTime()) / (7 * 86400000),
+    );
+    return weekNum === phase;
   }
 
   return true;
